@@ -5,6 +5,7 @@ const cors = require("cors");
 const { User } = require("./Models/User");
 const Guild = require("./Models/Guild");
 var bodyParser = require("body-parser");
+const { Config } = require("./Models/BotConfig");
 require("./config");
 
 app.use(cors());
@@ -17,11 +18,19 @@ app.get("/users", async (req, res) => {
 
 app.post("/register/user", async (req, res) => {
 	let userProps = req.body;
-	const user = new User(userProps);
-	await user.save();
-	res.json({
-		message: "user succefully created",
-	});
+	const checkUser = await User.findOne({ discordId: req.body.discordId });
+	if (!checkUser) {
+		const user = new User(userProps);
+		await user.save();
+		res.json({
+			message: "user succefully created",
+		});
+	} else {
+		res.json({
+			message: "user already exists",
+			error: true,
+		});
+	}
 });
 
 app.post("/register/guild", async (req, res) => {
@@ -35,7 +44,18 @@ app.post("/register/guild", async (req, res) => {
 
 app.get("/guild", async (req, res) => {
 	const guild = await Guild.findOne(req.body.id);
-	console.log(guild);
+});
+
+app.get("/server", async (req, res) => {
+	const config = await Config.find();
+	res.json(config[0]);
+});
+
+app.put("/server", async (req, res) => {
+	let changeConfig = await Config.updateOne(req.body);
+	const config = await Config.find();
+
+	res.json(config[0]);
 });
 
 app.listen(port, () => {
